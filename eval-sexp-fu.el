@@ -140,11 +140,11 @@
 (defmacro esf-konstantly (v)
   `(lambda (&rest _it) ,v))
 (defun esf-every0 (pred xs)
-  (labels ((rec (pred xs acc)
-             (if (null xs)
-                 acc
-               (let ((it (funcall pred (car xs))))
-                 (and it (rec pred (cdr xs) it))))))
+  (cl-labels ((rec (pred xs acc)
+                   (if (null xs)
+                       acc
+                     (let ((it (funcall pred (car xs))))
+                       (and it (rec pred (cdr xs) it))))))
     (rec pred xs nil)))
 (defun esf-every-pred (&rest preds)
   (lexical-let ((preds preds))
@@ -173,7 +173,7 @@
 (defun* eval-sexp-fu-flash (bounds &optional (face eval-sexp-fu-flash-face) (eface eval-sexp-fu-flash-error-face))
   "BOUNS is either the cell or the function returns, such that (BEGIN . END).
 Reurn the 4 values; bounds, highlighting, un-highlighting and error flashing procedure. This function is convenient to use with `define-eval-sexp-fu-flash-command'."
-  (flet ((bounds () (if (functionp bounds) (funcall bounds) bounds)))
+  (cl-flet ((bounds () (if (functionp bounds) (funcall bounds) bounds)))
     (let ((b (bounds)))
       (when b
         (funcall eval-sexp-fu-flash-function b face eface (current-buffer))))))
@@ -296,13 +296,13 @@ See also `eval-sexp-fu-flash'."
 
 (require 'rx)
 (defun esf-forward-inner-sexp0 ()
-  (flet ((poss ()
-           (let
-               ((prev (save-excursion (backward-sexp) (forward-sexp) (point)))
-                (next (save-excursion (forward-sexp) (backward-sexp) (point))))
-             (list prev (line-number-at-pos prev)
-                   next (line-number-at-pos next)
-                   (point) (line-number-at-pos)))))
+  (cl-flet ((poss ()
+                  (let
+                      ((prev (save-excursion (backward-sexp) (forward-sexp) (point)))
+                       (next (save-excursion (forward-sexp) (backward-sexp) (point))))
+                    (list prev (line-number-at-pos prev)
+                          next (line-number-at-pos next)
+                          (point) (line-number-at-pos)))))
     (cond ((looking-at (rx (or (syntax symbol) (syntax word)
                                (syntax open-parenthesis))))
            (forward-sexp))
@@ -396,22 +396,22 @@ such that ignores any prefix arguments."
 ;;; initialize.
 (defun esf-initialize ()
   (define-eval-sexp-fu-flash-command eval-last-sexp
-    (eval-sexp-fu-flash (when (ignore-errors (preceding-sexp))
+    (eval-sexp-fu-flash (when (ignore-errors (elisp--preceding-sexp))
                           (with-esf-end-of-sexp
                             (bounds-of-thing-at-point 'sexp)))))
   (define-eval-sexp-fu-flash-command eval-defun
-    (eval-sexp-fu-flash (when (ignore-errors (preceding-sexp))
+    (eval-sexp-fu-flash (when (ignore-errors (elisp--preceding-sexp))
                           (save-excursion
                             (end-of-defun)
                             (beginning-of-defun)
                             (bounds-of-thing-at-point 'sexp)))))
   (eval-after-load 'eev
     '(progn
-      ;; `eek-eval-last-sexp' is defined in eev.el.
-      (define-eval-sexp-fu-flash-command eek-eval-last-sexp
-        (eval-sexp-fu-flash (when (thing-at-point 'sexp)
-                              (cons (save-excursion (eek-backward-sexp))
-                                    (point))))))))
+       ;; `eek-eval-last-sexp' is defined in eev.el.
+       (define-eval-sexp-fu-flash-command eek-eval-last-sexp
+         (eval-sexp-fu-flash (when (thing-at-point 'sexp)
+                               (cons (save-excursion (eek-backward-sexp))
+                                     (point))))))))
 (defun esf-initialize-slime ()
   (define-eval-sexp-fu-flash-command slime-eval-last-expression
     (eval-sexp-fu-flash (with-esf-end-of-sexp
